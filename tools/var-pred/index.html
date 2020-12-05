@@ -1,0 +1,355 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"> 
+  <meta content="text/html;charset=ISO-8859-1" http-equiv="Content-Type"> 
+  <title>Variant-Based Decidable Satisfiability in Initial Algebras with Predicates</title>
+  <meta name="Author" content="Raul Gutierrez">
+  <meta name="Description" content="">
+</head>
+<body topmargin="15" leftmargin="15" rightmargin="15" bottommargin="15" link="#0000ff" alink="#ffff00" bgcolor="#ffffff" text="#000000" vlink="#aa00ff"> 
+
+<table border="0" width="100%"> 
+  <tbody> 
+     <tr> 
+       <td align="left" bgcolor="#0000ff"><b><font color="#ffffff" size="+3"> 
+        <b>Variant-Based Decidable Satisfiability in Initial Algebras with Predicates</b>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<br>
+Decision procedures can be either <it>theory specific</it>, e.g.,
+  Presburger arithmetic, or <it>theory-generic</it>, applying to an
+  infinite number of user-definable theories.  Variant satisfiability
+  is a theory-generic procedure for quantifier-free satisfiability in
+  the initial algebra of an order-sorted equational theory (&Sigma;, E
+  &cup; B)$ under two conditions: (i) E &cup; B has the <it>finite
+  variant property</it> and B has a finitary unification algorithm; and
+  (ii) (&Sigma;, E &cup; B) protects a constructor subtheory
+  (&Omega;, E(&Omega;) &cup; B(&Omega;))$ that is OS-<it>compact</it>.
+  These conditions apply to many user-definable theories, but have a
+  main limitation: they apply well to <it>data structures</it>, but
+  often do <it>not</it> hold for user-definable <it>predicates</it> on
+  such data structures.  We present a theory-generic satisfiability
+  decision procedure, and a prototype implementation, extending
+  variant-based satisfiability to initial algebras with user-definable
+  predicates under fairly general conditions.
+<br>
+<br>
+<table border="0" width="100%"> 
+  <tbody> 
+     <tr> 
+       <td align="left" bgcolor="#0000ff"><b><font color="#ffffff" size="+3"> 
+        <b>On the installation and use</b>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<br>
+
+The decision procedure has been implemented entirely in Maude using
+its reflection capabilities.  The latest version of the tool works on
+Maude 2.6.
+
+<br>
+<br>
+To load the tool one just needs to load the Maude code of the tool. 
+If <span style="font-family: monospace;">maude</span> is your Maude executable, 
+the call to the decision procedure is in file <span style="font-family: monospace;">nu-itp.maude</span>, 
+and all files are in the same directory, you can load the tool as follows:
+<br>
+<br> 
+<span style="font-family: monospace;">&nbsp; $ maude nu-itp.maude <br>
+&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; \||||||||||||||||||/<br> 
+&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp; --- Welcome to Maude ---<br> 
+&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; /||||||||||||||||||\<br> 
+&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; Maude 2.6 built: Dec 10 2010 11:12:39<br> 
+&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; Copyright 1997-2010 SRI International<br> 
+&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp; Sat May 7 21:19:03 2011<br> 
+&nbsp; Maude&gt; </span>
+<br>
+<br>
+
+The decision procedure offers the following command:<br>
+<ul>
+  <li>red <b>initTheory</b>(&lt;whole-theory-module&gt;, &lt;preds-theory-module&gt;, &lt;os-compact-theory-module&gt;, &lt;conjectures-and-patterns-module&gt;) .</li>
+</ul>
+
+For instance, consider the main example of the paper. The union of
+  modules <span style="font-family: monospace;">ACU-NAT-FUN</span> and
+  <span style="font-family: monospace;">NAT-SET</span> specifies the
+  equational theory <it>NatSet</it>. <span style="font-family:
+  monospace;">NAT-SET</span> itself specifies the OS-compact
+  constructor decomposition of the theory.
+
+<pre>
+<code>
+fmod ACU-NAT is
+  sort Natural .
+
+  op 0   : -> Natural [ctor] .
+  op 1   : -> Natural [ctor] .
+  op _+_ : Natural Natural -> Natural [ctor assoc comm id: 0] .
+endfm
+
+fmod ACU-NAT-FUN is
+  pr ACU-NAT .
+
+  op max : Natural Natural -> Natural [comm] .
+  op min : Natural Natural -> Natural [comm] .
+  op _-_ : Natural Natural -> Natural .  *** monus
+
+  vars N M : Natural .
+
+  eq max(N,N + M) = N + M [variant] .
+  eq min(N,N + M) = N [variant] .
+
+  eq N - (N + M) = 0 [variant].
+  eq (N + M) - N = M [variant] .
+endfm
+
+fmod ACU-NAT-SET is
+  pr ACU-NAT .
+
+  sort NaturalSet .
+
+  subsort Natural < NaturalSet .
+
+  op mt : -> NaturalSet [ctor] .
+  op _,_ : NaturalSet NaturalSet -> NaturalSet [ctor assoc comm] .
+
+  vars NS NS' : NaturalSet .
+
+  *** identity of set union
+  eq NS , mt = NS [variant] .
+  *** idempotency of set union
+  eq NS , NS = NS [variant] .
+  *** idempotency of set union
+  eq NS , NS , NS' = NS , NS' [variant] .
+ endfm
+</code>
+</pre>
+
+  The extension <span style="font-family:
+  monospace;">NatSetPreds</span> of the theory <it>NatSet</it> is
+  specified by the <span style="font-family:
+  monospace;">NAT-SET-PREDS</span> module.
+
+<pre>
+  <code>
+fmod ACU-NAT-SET-PREDS is
+  pr ACU-NAT-SET .
+
+  sort Pred .
+
+  op tt : -> Pred [ctor] .
+  *** set containment
+  op _=C_ : NaturalSet NaturalSet -> Pred [ctor] .
+  *** strict order
+  op _>_ : Natural Natural -> Pred [ctor] .   
+  *** sort predicates
+  op natural : NaturalSet -> Pred [ctor] .
+  op even : NaturalSet -> Pred [ctor] .
+  op odd : NaturalSet -> Pred [ctor] .
+
+  vars N M : Natural .
+  vars NS NS' : NaturalSet .
+
+  eq mt =C NS = tt [variant] .
+  eq NS =C NS = tt [variant] .
+  eq NS =C NS , NS' = tt [variant] .
+
+  eq N + M + 1 > N = tt [variant] .
+
+  eq natural(N) = tt [variant] .
+
+  eq even(N + N) = tt [variant] .
+  
+  eq odd(N + N + 1) = tt [variant] .
+endfm
+</code>
+</pre>
+
+A QF formula we want to test for variant satisfiability is specified
+as a non-executable equations labeled with the <span
+style="font-family: monospace;">conjecture</span> keyword. The
+negative patterns of each user-defined predicate outside the
+OS-compact subtheory are also specified as non-executable equations
+labeled with the <span style="font-family: monospace;">nPattern</span>
+keyword.
+
+  Suppose we want to prove the inductive validity of the following
+formulae:
+
+<ul>
+  <li><span style="font-family: monospace;">N - M = 0 &hArr; M
+  > N = tt &or; N = M</span>, and</li>
+  <li> <span style="font-family:
+  monospace;">natural(NS) = tt &rArr; even(NS) = tt &or; odd(NS) =
+  tt</span>.</li>
+</ul>
+
+  This is equivalent to proving that each conjunction in the DNF of
+  each negated formula is unsatisfiable. Therefore, our input
+conjectures are:
+
+<ul>
+  <li><span style="font-family: monospace;">(N - M =
+  0 &and; M > N &ne; tt &and; N &ne; M) &or; (N - M &ne; 0 &and; M > N = tt) &or;
+  (N - M &ne; 0 &and; N = M)</span> for the first formula, and</li>
+  <li><span
+  style="font-family: monospace;">natural(NS) = tt &and; even(NS) &ne; tt
+  &and; odd(NS) &ne; tt</span> for the second formula.</li>
+</ul>
+
+  The three conjunctions of the first formula correspond to the
+  equations <span style="font-family: monospace;"> prop1a</span>,
+  <span style="font-family: monospace;">prop1b</span> and <span
+  style="font-family: monospace;">prop1c</span> in module <span
+  style="font-family:
+  monospace;">NAT-SET-PRED-CONJECTURES-PATTERNS</span>, and the second
+  formula corresponds to the equation <span style="font-family:
+  monospace;"> prop2</span>.
+
+  We also specify in module <span style="font-family:
+  monospace;">NAT-SET-PRED-CONJECTURES-PATTERNS</span> the negative
+  patterns.
+
+<pre>
+<code>
+mod ACU-NAT-SET-PREDS-CONJECTURES-PATTERNS is
+  pr ATOM-MAGMA-SET .
+  pr PATTERN .
+  pr ACU-NAT-SET-PREDS .
+  pr ACU-NAT-FUN .
+
+*** patterns
+  op neg-subseteq : NaturalSet NaturalSet -> Pattern .
+  op neg-gr      : Natural Natural -> Pattern .
+  op neg-even    : NaturalSet -> Pattern .
+  op neg-odd     : NaturalSet -> Pattern .
+  op neg-natural : NaturalSet -> Pattern .
+
+*** formulae
+  op prop1a : Natural Natural -> AtomMagma .
+  op prop1b : Natural Natural -> AtomMagma .
+  op prop1c : Natural Natural -> AtomMagma .
+  op prop2  : NaturalSet -> AtomMagma .
+
+  vars N M K : Natural .
+  var NS : NaturalSet .
+  
+  eq prop1a(N,M) = (N - M = 0) , (M > N /= tt) 
+       , (N /= M) [nonexec label conjecture] .
+  eq prop1b(N,M) = (N - M /= 0) 
+       , (M > N = tt) [nonexec label conjecture] .
+  eq prop1c(N,M) = (N - M /= 0) 
+       , (N = M) [nonexec label conjecture] .
+
+  eq prop2(NS) = (natural(NS) = tt) , (even(NS) /= tt) 
+       , (odd(NS) /= tt) [nonexec label conjecture] .
+
+  eq neg-subseteq(NS,MS) = NS =C MS
+       | ((NS, MS) /= MS) [nonexec label nPattern] .
+  eq neg-gr(N,M) = N > N + M 
+       | (empty).AtomMagma [nonexec label nPattern] .
+  eq neg-even(mt) = even(mt)
+       | (empty).AtomMagma [nonexec label nPattern] .
+  eq neg-even(N) = even(N + N + 1) 
+       | (empty).AtomMagma [nonexec label nPattern] .
+  eq neg-even((N , NS)) = even((N, NS)) 
+       | ((N /= NS) , (NS /= mt)) [nonexec label nPattern] . 
+  eq neg-odd(mt) = odd(mt)
+       | (empty).AtomMagma [nonexec label nPattern] .
+  eq neg-odd(N) = odd(N + N) 
+       | (empty).AtomMagma [nonexec label nPattern] .
+  eq neg-odd((N , NS)) = odd((N, NS)) 
+       | ((N /= NS) , (NS /= mt)) [nonexec label nPattern] .
+  eq neg-natural(mt) = natural(mt)
+       | (empty).AtomMagma [nonexec label nPattern] .
+  eq neg-natural((N , NS)) = natural((N, NS)) 
+       | ((N /= NS) , (NS /= mt)) [nonexec label nPattern] .
+endm
+</code>
+</pre>
+
+In the execution, our main function uses four arguments:
+
+<ul>
+ <li> the whole theory (&Sigma;,E &cup; U),</li>
+ <li> the subtheory that contains the predicates,</li>
+ <li> the constructor subtheory (&Omega;,E(&Omega;) &cup; B(&Omega;))
+  which is OS-compact, and</li>
+  <li> the patterns and the conjectures.</li>
+</ul>
+
+<pre>
+<code>
+fmod ACU-NAT-SET-PREDS-THEORY is
+  pr ACU-NAT-SET-PREDS .
+  pr ACU-NAT-FUN .
+endfm
+
+fmod ACU-NAT-SET-PREDS-INTERFACE is
+  pr ACU-NAT-SET-PREDS-THEORY .
+  pr NU-ITP-INTERFACE .
+endfm
+
+red in ACU-NAT-SET-PREDS-INTERFACE : 
+  initTheory(upModule('NAT-SET-PREDS-THEORY,true)
+    , upModule('ACU-NAT-SET-PREDS,true)
+    , upModule('ACU-NAT-SET,true)
+    , upModule('ACU-NAT-SET-PREDS-CONJECTURES-PATTERNS
+        ,false)) .
+</code>
+</pre>
+
+If the result is <span style="font-family: monospace;">{false}</span>
+then the formula is unsatisfiable and if it is <span
+style="font-family: monospace;">{true}</span> then the formula is
+satisfiable.
+
+<br>
+<br>
+
+<table border="0" width="100%"> 
+  <tbody> 
+     <tr> 
+       <td align="left" bgcolor="#0000ff"><b><font color="#ffffff" size="+3"> 
+        <b>Download</b>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<br>
+You need:
+<ul>
+  <li><a href="http://maude.cs.uiuc.edu/download/">Maude 2.6</a></li>
+  <li><a href="nu-itp.zip">Tool & Examples</a></li>
+</ul>
+<table border="0" width="100%"> 
+  <tbody> 
+     <tr> 
+       <td align="left" bgcolor="#0000ff"><b><font color="#ffffff" size="+3"> 
+        <b>Documentation</b>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<ul>
+  <li><a href="https://www.ideals.illinois.edu/handle/2142/96264">Variant Satisfiability in Initial
+  Algebras with Predicates (long version)</a>. 
+    Ra&uacute;l Guti&eacute;rrez and Jos&eacute; Meseguer. Technical Report, Department of Computer Science in 
+    the University of Illinois at Urbana-Champaign. Urbana, June 2017.</li>
+</ul>
+
+<table border="0" width="100%">
+  <tbody>
+    <tr>
+      <td align="right">
+<!--webbot bot="Timestamp" S-Type="EDITED" S-Format="%d/%m/%Y" startspan -->11/15/2017<!--webbot bot="Timestamp" i-checksum="12566" endspan --></td>
+    </tr>
+  </tbody>
+</table>
+
+</body>
+</html>
+
